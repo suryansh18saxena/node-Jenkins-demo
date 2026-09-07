@@ -17,7 +17,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                sh 'npm ci'
             }
         }
 
@@ -31,11 +31,29 @@ pipeline {
             steps {
                 sh '''
                 node app.js > app.log 2>&1 &
+                APP_PID=$!
                 sleep 5
-                curl localhost:3000
-                curl localhost:3000/health
+
+                curl --fail http://localhost:3000
+                curl --fail http://localhost:3000/health
+
+                kill $APP_PID
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'BUILD SUCCESS: Node.js CI pipeline completed successfully.'
+        }
+
+        failure {
+            echo 'BUILD FAILED: Check the console output for errors.'
+        }
+
+        always {
+            echo "Build status: ${currentBuild.currentResult}"
         }
     }
 }
